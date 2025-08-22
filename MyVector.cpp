@@ -1,23 +1,30 @@
 #include <iostream>
 using namespace std;
 
+template <typename T>
 class MyVector {
 public:
-	MyVector(unsigned int size, int value = 0) :m_size(size) 
+	MyVector(unsigned int size, const T& value = T()) : m_size(size), m_capacity(size)
 	{
-		m_arr = new int[m_size];
+		if(m_capacity > 0)
+			m_arr = new T[m_capacity];
+		else 
+			m_arr = nullptr;
 		for(unsigned int i=0; i<m_size; i++)
 		{
 			m_arr[i] = value;
 		}
 	}
 	
-	MyVector(const MyVector& other) : m_size(other.m_size) 
+	MyVector(const MyVector& other) : m_size(other.m_size), m_capacity(other.m_capacity)
 	{
-		m_arr = new int[m_size];
+		if(m_capacity > 0)
+			m_arr = new T[m_capacity];
+		else 
+			m_arr = nullptr;
 		for(unsigned int i=0; i<m_size; i++)
 		{
-			m_arr[i]=other.m_arr[i];
+			m_arr[i] = other.m_arr[i];
 		}
 	}
 
@@ -32,7 +39,11 @@ public:
 		{
 			delete[] m_arr;
 			m_size = other.m_size;
-			m_arr = new int[m_size];
+			m_capacity = other.m_capacity;
+			if(m_capacity > 0)
+				m_arr = new T[m_capacity];
+			else
+				m_arr = nullptr;
 			for(unsigned int i=0; i<m_size; i++)
 			{
 				m_arr[i] = other.m_arr[i];
@@ -41,21 +52,55 @@ public:
 		return *this;
 	}
 
-	void resize(unsigned int n)
+	void resize(unsigned int n, const T& value = T())
 	{
-		int* newArr = new int[n];
-		unsigned int minSize = (n<m_size) ? n : m_size;
-		for(unsigned int i=0; i<minSize; i++)
+		if(n > m_capacity)
+			reserve(n);
+		if(n > m_size)
+		{
+			for(unsigned int i=m_size; i<n; i++)
+			{
+				m_arr[i] = value;
+			}
+		}
+		m_size = n;
+	}
+
+	void reserve(unsigned int newCapacity)
+	{
+		if(newCapacity <= m_capacity) return;
+		T* newArr = new T[newCapacity];
+		for(unsigned int i=0; i<m_size; i++)
 		{
 			newArr[i] = m_arr[i];
 		}
-		for(unsigned int i=minSize; i<n; i++)
-		{
-			newArr[i] = 0;
-		}
 		delete[] m_arr;
 		m_arr = newArr;
-		m_size = n;
+		m_capacity = newCapacity;
+	}
+
+	void push_back(const T& value)
+	{
+		if(m_size == m_capacity)
+		{
+			if(m_capacity == 0)
+			{
+				reserve(1);
+			}
+			else 
+			{
+				reserve(m_capacity*2);
+			}
+		}
+		m_arr[m_size] = value;
+		m_size++;
+	}
+
+	void pop_back()
+	{
+		if(m_size == 0) 
+			cout<<"Error: pop_back on empty vector\n";
+		else m_size--;
 	}
 
 	void print() const
@@ -67,12 +112,12 @@ public:
 		cout<<endl;
 	}
 
-	int& operator [] (int index)
+	T& operator [] (unsigned int index)
 	{
 		return m_arr[index];
 	}
 
-	int operator [] (int index) const
+	T operator [] (unsigned int index) const
 	{
 		return m_arr[index];
 	}
@@ -82,19 +127,25 @@ public:
 		return m_size;
 	}
 
+	unsigned int capacity() const
+	{
+		return m_capacity;
+	}
+
 private:
-	int* m_arr;
-	unsigned int m_size;	
+	T* m_arr;
+	unsigned int m_size;
+	unsigned int m_capacity;
 };
 
 int main()
 {
 	cout<<"Create vector v1(4, 2):\n";
-	MyVector v1(4, 2);
+	MyVector<int> v1(4, 2);
 	v1.print();
 	
 	cout<<"Resize v1 to size 7:\n";
-	v1.resize(7);
+	v1.resize(7, 5);
 	v1.print();
 
 	cout<<"Resize v1 to size 3:\n";
@@ -102,13 +153,24 @@ int main()
 	v1.print();
 
 	cout<<"Copy Constructor:\n";
-	MyVector v2 = v1;
+	MyVector<int> v2 = v1;
 	v2.print();
 
 	cout<<"= operator:\n";
-	MyVector v3(4, 9);
+	MyVector<int> v3(4, 9);
 	v3 = v1;
 	v3.print();
+
+	cout<<"push_back:\n";
+	v3.push_back(35);
+	v3.push_back(50);
+	v3.print();
+	cout<<"Size: "<<v3.size()<<" Capacity: "<<v3.capacity()<<endl;
+
+	cout<<"pop_back:\n";
+	v3.pop_back();
+	v3.print();
+	cout<<"Size: "<<v3.size()<<" Capacity: "<<v3.capacity()<<endl;
 
 	cout<<"Modify element:\n";
 	v3[1] = 36;
